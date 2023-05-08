@@ -1,0 +1,105 @@
+Vagrant.configure("2") do |config|
+
+  # Docker-Host
+  config.vm.define "docker-host" do |node|
+    node.vm.box = "generic/centos9s_custom"
+    node.vm.guest = :linux
+    node.vm.hostname = "docker-host"
+
+    # Hyper-V specific settings
+    node.vm.provider "hyperv" do |h, override|
+      h.vm_integration_services = {
+        guest_service_interface: true,
+        time_synchronization: true
+      }
+      h.vmname = "docker-host"
+      h.memory = 2048
+      h.cpus = 2
+      h.mac = "00:00:00:12:31:AA"
+
+      # Link the node to the default network switch
+      override.vm.network "public_network", bridge: "NATSwitch"
+    end
+
+    # VirtualBox specific settings
+    node.vm.provider "virtualbox" do |vb, override|
+      vb.memory = 2048
+      vb.cpus = 2
+      vb.name = "docker-host"
+
+      override.vm.network "private_network", ip: "192.168.56.195"
+    end
+
+    # VMware specific settings
+    node.vm.provider "vmware_desktop" do |v, override|
+      v.vmx["memsize"] = 2048
+      v.vmx["numvcpus"] = 2
+      v.base_address = "192.168.56.195"
+      v.base_mac = "00:00:00:12:31:AA"
+      v.name = "docker-host"
+
+      override.vm.network "private_network", ip: "192.168.56.195"
+    end
+
+    # Disable standard share
+    node.vm.synced_folder ".", "/vagrant", disabled: true
+
+    # Link the node to the default network switch
+    node.vm.network "public_network", bridge: "NATSwitch"
+
+    # Configure Docker
+    # (taken from https://docs.docker.com/engine/install/centos/)
+    node.vm.provision "shell", path: "provision.sh", run: "always"
+
+    # Copy DPOD-Docker-Demo to host
+    node.vm.provision "file", source: "./dpod-ubuntu", destination: "/home/vagrant/dpod-ubuntu", run: "always"
+  end
+
+
+
+  # Bonus-VM (Client)
+  config.vm.define "client" do |node|
+    node.vm.box = "generic/centos9s_custom"
+    node.vm.guest = :linux
+    node.vm.hostname = "client"
+
+    # Hyper-V specific settings
+    node.vm.provider "hyperv" do |h, override|
+      h.vm_integration_services = {
+        guest_service_interface: true,
+        time_synchronization: true
+      }
+      h.vmname = "client"
+      h.memory = 1024
+      h.cpus = 1
+      h.mac = "00:00:00:12:31:BB"
+
+      # Link the node to the default network switch
+      override.vm.network "public_network", bridge: "NATSwitch"
+    end
+
+    # VirtualBox specific settings
+    node.vm.provider "virtualbox" do |vb, override|
+      vb.memory = 1024
+      vb.cpus = 1
+      vb.name = "client"
+
+      override.vm.network "private_network", ip: "192.168.56.196"
+    end
+
+    # VMware specific settings
+    node.vm.provider "vmware_desktop" do |v, override|
+      v.vmx["memsize"] = 1024
+      v.vmx["numvcpus"] = 1
+      v.base_address = "192.168.56.195"
+      v.base_mac = "00:00:00:12:31:BB"
+      v.name = "docker-host"
+
+      override.vm.network "private_network", ip: "192.168.56.196"
+    end
+
+    # Disable standard share
+    node.vm.synced_folder ".", "/vagrant", disabled: true
+  end
+
+end

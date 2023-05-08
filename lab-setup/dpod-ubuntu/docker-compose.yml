@@ -1,0 +1,5 @@
+version: '3'
+services:
+  # Use "docker-compose run dpod-client" to start the container in interactive mode
+  dpod-client:
+    build: .
